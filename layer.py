@@ -1,6 +1,6 @@
 import abc
 import numpy
-
+import math
 
 class Layer(object):
     """Class Layer:
@@ -37,13 +37,19 @@ class Layer(object):
         """
         return numpy.matmul(p_X, self.w[1:, :]) + self.w[0, :] #TODO: que pasa si le sumamos al matmul el peso 0
 
-    def _activation(self, p_net_input):
-        return p_net_input
 
     def _quantization(self, p_activation):
         #TODO: Mayor que cero 1 <=> Menor que cero -1
-        return numpy.where(p_activation >= 0.0, 1, -1)
+        return numpy.where(p_activation >= 0, 1, 0)
 
     @abc.abstractmethod
     def predict(self, p_X):
         pass
+
+    def _activation(self, p_net_input):
+        return self._sigmoid(p_net_input)
+
+    def _sigmoid(self, X):
+        sigmoid = lambda x: 1 / (1 + numpy.exp(-x))
+        vect = numpy.vectorize(sigmoid)
+        return vect(X)

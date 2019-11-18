@@ -51,8 +51,27 @@ class BackPropagation(object):
         self.output_layer_.init_w(self.random_seed)
 
         #TODO: train & validation
+        for _ in range(0, self.number_iterations):
+            v_Y_input_layer_ = self.input_layer_.predict(p_X)
+            v_Y_hidden_layer_ = []
+            v_Y_hidden_layer_.append(self.v_hidden_layers[0].predict(v_Y_input_layer_))
+            for v_hiddenlayer in self.hidden_layers_[1:]:
+                v_Y_hidden_layer_.append(self.v_hidden_layer.predict(v_Y_hidden_layer_[-1]))
+            v_Y_output_layer_ = self.output_layer_.activate(v_Y_hidden_layer_[-1])
+
+            # error = f_energy(v_Y_output_layer_, p_Y_training)
+            
+            self.output_layer_.w += self.eta * numpy.substract(p_Y, v_Y_output_layer_) * * v_Y_hidden_layer_[-1]
+            
+            #for i-1 in reversed(range((v_Y_hidden_layer_))):
+                #self.v_Y_hidden_layer_[i]  = 
+            
+
 
         return self
+
+    def derivative_sigmoid(p_X):
+        return _sigmoid(p_X)*(1 - _sigmoid(p_X)
 
     def predict(self, p_X):
         v_Y_input_layer_ = self.input_layer_.predict(p_X)

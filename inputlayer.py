@@ -1,5 +1,6 @@
 import numpy
 import layer
+# import utils.sigmoid
 
 
 class InputLayer(layer.Layer):

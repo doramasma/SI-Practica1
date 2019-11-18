@@ -12,3 +12,6 @@ class OutputLayer(layer.Layer):
 
     def predict(self, p_X):
         return self._quantization(self._activation(self._net_input(p_X)))
+    
+    def activate(self, p_X):
+        return self._activation(self._net_input(p_X))
