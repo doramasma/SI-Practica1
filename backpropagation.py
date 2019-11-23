@@ -106,6 +106,9 @@ class BackPropagation(object):
 
                     sigma = self._calculate_sigma(previous_sigma, previous_w, v_Y_hidden_layer_[i])
                     print(v_Y_hidden_layer_[i].shape)
+                    # se supone que todo esta bien, pero no entiendo como se hace para cuadrar los shape de la sigma 
+                    # de la capa u con las salidas de la capa r (zR)
+                    # faltaría eso xD suerte y animo. Mañana es probable que haga algo <3S
                     delta_w = self._calculate_delta(sigma, v_Y_next_layer_)
 
                     self.hidden_layers_[i].w = self.hidden_layers_[i].w + delta_w.reshape(self.hidden_layers_[i].w.shape)
