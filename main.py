@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print((bcolors.LOADING + bcolors.BOLD) + "|============[Getting info from dataset...]============|" + bcolors.ENDC)
     df = process_input()
 
-    print(norm_df(df))
+    # print(norm_df(df))
     
     p_X_training, p_X_test, p_Y_training, p_Y_test = df_split(df, 0.10)
     p_X_training, p_X_validation, p_Y_training, p_Y_validation = df_split(pandas.DataFrame(numpy.concatenate((p_X_training, p_Y_training), axis=1)), 0.15)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     print((bcolors.LOADING + bcolors.BOLD) + "|===============[End of input process]=================|" + bcolors.ENDC)
 
     print("\n" + (bcolors.LOADING + bcolors.BOLD)  + "|=================[Training BPNN...]===================|" + bcolors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.01, p_number_iterations=10, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.01, p_number_iterations=1, p_random_state=1)
 
     backpropagation.fit(p_X_training = p_X_training,
                         p_Y_training = p_Y_training,
