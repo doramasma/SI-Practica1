@@ -1,6 +1,18 @@
 import abc
 import numpy
-import math
+
+
+def _sigmoid(X):
+    def int_sigmoid(x):
+        if x < -100:
+            return 0
+        elif x > 100:
+            return 1
+        else:
+            return 1 / (1 + numpy.exp(-x))
+    vect = numpy.vectorize(int_sigmoid)
+    return vect(X)
+
 
 class Layer(object):
     """Class Layer:
@@ -27,29 +39,18 @@ class Layer(object):
         pass
 
     def _net_input(self, p_X):
-        """
-        print("======================================================")
-        print("Entradas: ", p_X)
-        print("Pesos: \n", self.w[1:,:])
-        print("Multiplicación: ", numpy.matmul(p_X, self.w[1:, :]))
-        print("Sumamos w0: ", self.w[0, :])
-        print("Nueva: ", numpy.matmul(p_X, self.w[1:, :]) + self.w[0, :])
-        """
-        return numpy.matmul(p_X, self.w[1:, :]) + self.w[0, :] #TODO: que pasa si le sumamos al matmul el peso 0
-
-
-    def _quantization(self, p_activation):
-        #TODO: Mayor que cero 1 <=> Menor que cero -1
-        return numpy.where(p_activation >= 0, 1, 0)
+        return numpy.matmul(p_X, self.w[1:, :]) + self.w[0, :]
 
     @abc.abstractmethod
     def predict(self, p_X):
         pass
 
-    def _activation(self, p_net_input):
-        return self._sigmoid(p_net_input)
+    @staticmethod
+    def _activation(p_net_input):
+        return _sigmoid(p_net_input)
 
-    def _sigmoid(self, X):
-        sigmoid = lambda x: 1 / (1 + numpy.exp(-x))
-        vect = numpy.vectorize(sigmoid)
-        return vect(X)
+    @staticmethod
+    def _quantization(p_activation):
+        # TODO: Mayor que cero 1 <=> Menor que cero -1
+        return numpy.where(p_activation >= 0.6, 1, 0)
+
