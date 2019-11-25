@@ -34,13 +34,25 @@ def _calculate_sigma_output(p_Y_training, v_Y_layer_):
     return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
 
 
-def _calculate_sigma(previous_sigma, previous_w, v_Y_layer_):
-    return np.sum(np.dot(previous_sigma, previous_w.T)) * _derivative_sigmoid(v_Y_layer_)
+def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
+    return np.sum(np.dot(sigma_U, w_U.T)) * _derivative_sigmoid(v_Y_layer_)
 
 
 def get_accuracy(predicted, test):
-    n_hits = len([1 for predicted, expected in zip(predicted, test) if predicted == expected])
+    n_hits = len([1 for predicted, expected in zip(
+        predicted, test) if predicted == expected])
     return round(n_hits * 100 / len(test), 2)
+
+def _calculate_delta(eta, sigma, v_Y_previous_layer_):
+    delta_w = eta * np.dot(sigma.T, v_Y_previous_layer_)
+    delta_w0 = eta * sigma.T
+    return np.hstack([delta_w0, delta_w])
+
+# def _calculate_delta_backward(eta, sigma, v_Y_previous_layer_):
+#     delta_w = eta * np.dot(sigma.T, v_Y_previous_layer_)
+#     delta_w0 = eta * sigma
+#     delta_w0 = np.sum(delta_w0, axis=0) / delta_w0.shape[0]
+#     return np.vstack([delta_w0.T, delta_w.T])
 
 
 class BackPropagation(object):
@@ -73,7 +85,6 @@ class BackPropagation(object):
             p_batchs_per_epoch=50,
             p_number_hidden_layers=1,
             p_number_neurons_hidden_layers=np.array([1])):
-
         self.input_layer_ = inputlayer.InputLayer(p_X_training.shape[1])
         self.hidden_layers_ = []
         for v_layer in range(p_number_hidden_layers):
@@ -94,11 +105,11 @@ class BackPropagation(object):
         self.output_layer_.init_w(self.random_seed)
 
         # TODO: train & validation
-        randomize = np.arange(len(p_X_training))  # [0, 1, 2]
+        randomize = np.arange(len(p_X_training))
         p_X_shuffle = p_X_training.copy()
         p_Y_shuffle = p_Y_training.copy()
         for epoch in range(0, self.number_iterations):
-            np.random.shuffle(randomize)  # [2, 1, 0]
+            np.random.shuffle(randomize)
             p_X_training = p_X_shuffle[randomize]  # pX[2], pX[1], pX[0]
             p_Y_training = p_Y_shuffle[randomize]  # pY[2], py[1], py[0]
             if p_batchs_per_epoch * batch_size > len(p_X_training):
@@ -109,61 +120,47 @@ class BackPropagation(object):
                 current_batch_Y = p_Y_training[batch:batch + batch_size, :]
 
                 # FORWARD
-                v_Y_input_layer_ = self.input_layer_.predict(current_batch_X)
-                v_Y_hidden_layer_ = [self.hidden_layers_[0].predict(v_Y_input_layer_)]
-                for v_hiddenlayer in self.hidden_layers_[1:]:
-                    v_Y_hidden_layer_.append(v_hiddenlayer.predict(v_Y_hidden_layer_[-1]))
-                v_Y_output_layer_ = self.output_layer_.activate(v_Y_hidden_layer_[-1])
-                net_output = self.output_layer_._net_input(v_Y_hidden_layer_[-1])
+                v_Y = []    # vector of net_input results of each layer
+                z_Y = []    # vector of activation results of each layer
+                w = []      # vector of weights of each layer
+                layers = []
+
+                z_Y.append(current_batch_X)
+                
+                layers.append(self.input_layer_)
+                v_Y.append(self.input_layer_._net_input(current_batch_X))
+                z_Y.append(self.input_layer_._activation(v_Y[-1]))
+                w.append(self.input_layer_.w)
+                for v_hiddenlayer in self.hidden_layers_:
+                    layers.append(v_hiddenlayer)
+                    v_Y.append(v_hiddenlayer._net_input(z_Y[-1]))
+                    z_Y.append(v_hiddenlayer._activation(v_Y[-1]))
+                    w.append(v_hiddenlayer.w)
+                v_Y.append(self.output_layer_._net_input(z_Y[-1]))
+                w.append(self.output_layer_.w)
 
                 # BACKWARD
-                sigma = _calculate_sigma_output(current_batch_Y, net_output)
-                delta_w = self._calculate_delta(sigma, v_Y_hidden_layer_[-1])
-                self.output_layer_.w = self.output_layer_.w + delta_w.reshape(self.output_layer_.w.shape)
-                previous_sigma = (np.sum(sigma, axis=0) / sigma.shape[0])
+                sigma = _calculate_sigma_output(current_batch_Y, v_Y.pop())
+                # print(sigma.shape)
+                delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
+                self.output_layer_.w = self.output_layer_.w + delta_w.T
+                sigma_U = sigma
 
-                for i in reversed(range(len(v_Y_hidden_layer_))):
-                    if i == len(v_Y_hidden_layer_) - 1 and len(v_Y_hidden_layer_) > 1:
-                        previous_w = self.output_layer_.w
-                        v_Y_next_layer_ = v_Y_hidden_layer_[i - 1]
-
-                    elif 0 < i < len(v_Y_hidden_layer_) - 1:
-                        previous_w = self.hidden_layers_[i + 1].w
-                        v_Y_next_layer_ = v_Y_hidden_layer_[i - 1]
-
-                    else:
-                        previous_w = self.output_layer_.w if len(v_Y_hidden_layer_) == 1 else self.hidden_layers_[i + 1].w
-                        v_Y_next_layer_ = v_Y_input_layer_
-
-                    sigma = _calculate_sigma(previous_sigma, previous_w, v_Y_hidden_layer_[i])
-                    delta_w = self._calculate_delta_backward(sigma, v_Y_next_layer_)
-
-                    self.hidden_layers_[i].w = self.hidden_layers_[i].w + delta_w.reshape(self.hidden_layers_[i].w.shape)
-                    previous_sigma = sigma
-
-                # TODO: Mirar Capa de Entrada y Pesos
+                for _ in reversed(range(len(v_Y))):
+                    current_layer = layers.pop()
+                    sigma = _calculate_sigma(sigma_U, w.pop(), v_Y.pop())
+                    delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
+                    current_layer.w = current_layer.w + delta_w.T
+                    sigma_U = sigma
+                    
 
             # TODO: Validation
-            if epoch % 5 == 0 or epoch == self.number_iterations-1:
-                print("[Iteración", epoch, "]\nSGE  => ", np.mean(np.square(np.subtract(p_Y_validation, self.get_act_value(p_X_validation)))))
-                print("Accuracy => ", get_accuracy(self.predict(p_X_validation), p_Y_validation), "\n")
+            sge = np.mean(np.square(np.subtract(p_Y_validation, self.get_act_value(p_X_validation))))
+            accuracy = get_accuracy(self.predict(p_X_validation), p_Y_validation)
+            print("\rIteracion %s: ACC: %f\tSGE: %f\t\t\t" %
+                  (epoch, accuracy, sge), end='')
 
         return self
-
-    def _calculate_delta(self, sigma, v_Y_previous_layer_):
-        delta_w = self.eta * np.dot(sigma.T, v_Y_previous_layer_)
-        delta_w = (np.sum(delta_w, axis=0) / delta_w.shape[0])
-
-        delta_w0 = self.eta * sigma
-        delta_w0 = (np.sum(delta_w0, axis=0) / delta_w0.shape[0])
-
-        return np.hstack([delta_w0, delta_w])
-
-    def _calculate_delta_backward(self, sigma, v_Y_previous_layer_):
-        delta_w = self.eta * np.dot(sigma.T, v_Y_previous_layer_)
-        delta_w0 = self.eta * sigma
-        delta_w0 = np.sum(delta_w0, axis=0) / delta_w0.shape[0]
-        return np.vstack([delta_w0.T, delta_w.T])
 
     def predict(self, p_X):
         v_Y_input_layer_ = self.input_layer_.predict(p_X)

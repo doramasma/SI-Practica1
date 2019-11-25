@@ -29,3 +29,6 @@ class InputLayer(layer.Layer):
 
     def predict(self, p_X):
         return self._net_input(p_X)
+
+    def _activation(self, net_input):
+        return net_input
