@@ -93,6 +93,14 @@ if __name__ == "__main__":
     p_X_crash_test = np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,:-1])
     p_Y_crash_test = np.zeros((len(p_X_crash_test), 1))
 
+    # Printeos para ver los valores que hay despues de la normalizacion en las columnas con valores categoricos (creo)
+    # print("La columna 8 = Tipo_Precipitacion")
+    # print(np.unique(p_X_training[:,8]))
+    # print("La columna 9 = Intensidad_Precipitacion")
+    # print(np.unique(p_X_training[:,9]))
+    # print("La columna 12 = Estado_Carretera")
+    # print(np.unique(p_X_training[:,12]))
+    
     for index, val in enumerate(np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,-1])):
         p_Y_crash_test[index] = val
 
@@ -120,7 +128,7 @@ if __name__ == "__main__":
     # print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.1, p_number_iterations=100, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.01, p_number_iterations=200, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
@@ -134,18 +142,18 @@ if __name__ == "__main__":
     # print((BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=======[Predicting new values (Random Test)...]=======|" + BColors.ENDC)
-    predict = backpropagation.predict(p_X_test)
-    accuracy = get_accuracy(predict, p_Y_test)
-    # print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
-
-    # print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
-    print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
-
-    # print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (Crash Test)...]=======|" + BColors.ENDC)
-    # predict = backpropagation.predict(p_X_crash_test)
-    # accuracy = get_accuracy(predict, p_Y_crash_test)
-
+    # predict = backpropagation.predict(p_X_test)
+    # accuracy = get_accuracy(predict, p_Y_test)
     # print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 
     # print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
     # print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+
+    print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (Crash Test)...]=======|" + BColors.ENDC)
+    predict = backpropagation.predict(p_X_crash_test)
+    accuracy = get_accuracy(predict, p_Y_crash_test)
+
+    # print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
+
+    print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
+    print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)

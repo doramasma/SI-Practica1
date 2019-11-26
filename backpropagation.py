@@ -31,7 +31,15 @@ def _sigmoid(X):
 
 
 def _calculate_sigma_output(p_Y_training, v_Y_layer_):
-    return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
+    def convert(x):
+        if x == 0:
+            return 1
+        elif x == 1:
+            return 20
+
+    vect = np.vectorize(convert)
+    weights = vect(p_Y_training)
+    return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * weights * _derivative_sigmoid(v_Y_layer_)
 
 
 def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
