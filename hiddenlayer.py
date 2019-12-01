@@ -12,3 +12,12 @@ class HiddenLayer(layer.Layer):
 
     def predict(self, p_X):
         return self._activation(self._net_input(p_X))
+
+def _activation(p_net_input):
+        return _ReLU(p_net_input)
+
+def _ReLU(X):
+    def int_ReLU(x):
+        return x * (x > 0)
+    vec = numpy.vectorize(int_ReLU)
+    return vec(X)

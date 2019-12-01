@@ -5,13 +5,19 @@ import outputlayer
 
 def _ReLU(X):
     def int_ReLU(x):
-        return x * (x > 0)
+        if x > 100:
+            return 100
+        else:
+            return x * (x > 0)
     vec = np.vectorize(int_ReLU)
     return vec(X)
 
 def _dReLU(X):
     def int_dReLU(x):
-        return 1. * (x > 0)
+        if x > 100:
+            return 100
+        else:
+            return 1. * (x > 0)
     vec = np.vectorize(int_dReLU)
     return vec(X)
 
@@ -43,19 +49,13 @@ def _sigmoid(X):
 
 
 def _calculate_sigma_output(p_Y_training, v_Y_layer_):
-    def convert(x):
-        if x == 0:
-            return 1
-        elif x == 1:
-            return 15
-
-    vect = np.vectorize(convert)
-    weights = vect(p_Y_training)
-    return np.subtract(_derivative_sigmoid(v_Y_layer_), p_Y_training) * weights * _sigmoid(v_Y_layer_)
-
+    return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
 
 def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
-    return np.sum(np.dot(sigma_U, w_U.T)) * _derivative_sigmoid(v_Y_layer_)
+    print(sigma_U.shape)
+    print(_dReLU(v_Y_layer_).shape)
+    print(w_U.T[1:,1:].shape)
+    return np.dot(sigma_U, w_U.T[1:,:]) * _dReLU(v_Y_layer_)
 
 
 def get_accuracy(predicted, test):
@@ -105,6 +105,9 @@ class BackPropagation(object):
             p_batchs_per_epoch=50,
             p_number_hidden_layers=1,
             p_number_neurons_hidden_layers=np.array([1])):
+
+        print("Porcentaje de accidentes: " , np.mean( p_Y_training[:,0] ) * 100 ,  "\n" )
+        
         self.input_layer_ = inputlayer.InputLayer(p_X_training.shape[1])
         self.hidden_layers_ = []
         for v_layer in range(p_number_hidden_layers):

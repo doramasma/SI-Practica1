@@ -41,6 +41,16 @@ def process_input():
 
     return dataset
 
+def undersample(df):
+    accidents_df = df.loc[df['ACCIDENTE'] == 1].iloc[:,:]
+    non_accidents_df = df.loc[df['ACCIDENTE'] == 0].iloc[:,:]
+    randomize = np.arange(df.shape[0])
+    np.random.shuffle(randomize)
+    randomize = randomize[0:10000]
+    non_accidents_df = df.iloc[randomize,:]
+
+    return pd.concat([accidents_df, non_accidents_df])
+
 
 def df_split(dataset, test_range=.10):
     total_size = dataset.shape[0]
@@ -66,14 +76,6 @@ def norm_dataframe(dataset):
     return np.array(normalized_df)
 
 
-def norm_df(dataset):
-    x = pd.DataFrame(dataset.iloc[:, :-1])
-    norm_x = np.array((x - x.mean()) / x.std())
-    norm_x[:, -1] = dataset.iloc[:, -1]
-    normalized_df = pd.DataFrame(norm_x)
-    return normalized_df
-
-
 def get_accuracy(predicted, test):
     n_hits = len([1 for predicted, expected in zip(predicted, test) if predicted == expected])
     return round(n_hits * 100 / len(test), 2)
@@ -81,27 +83,38 @@ def get_accuracy(predicted, test):
 
 if __name__ == "__main__":
     print((BColors.LOADING + BColors.BOLD) + "|============[Getting info from dataset...]============|" + BColors.ENDC)
-    df = process_input()
+    df_original = process_input()
 
-    p_X_training, p_X_test, p_Y_training, p_Y_test = df_split(df, 0.10)
-    p_X_training, p_X_validation, p_Y_training, p_Y_validation = df_split(
+    df = undersample(df_original)
+    
+    df1 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 0:8])))
+    df2 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 10:12])))
+
+    
+    np_dataframe = np.array(pd.concat([pd.DataFrame(df1),
+                             pd.DataFrame(np.array(df.iloc[:, 8:10])),
+                             pd.DataFrame(df2),
+                             pd.DataFrame(np.array(df.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
+
+    p_X_training, p_X_test, p_Y_training, p_Y_test = df_split(pd.DataFrame(np_dataframe), 0.10)
+    p_X_test, p_X_validation, p_Y_test, p_Y_validation = df_split(
         pd.DataFrame(np.concatenate((p_X_training, p_Y_training), axis=1)), 0.15)
+    #############################################################################
+    df1_test = norm_dataframe(pd.DataFrame(np.array(df_original.iloc[:, 0:8])))
+    df2_test = norm_dataframe(pd.DataFrame(np.array(df_original.iloc[:, 10:12])))
 
-    normalizado1 = norm_dataframe(pd.DataFrame(p_X_training[:,0:8]))
-    normalizado2 = norm_dataframe(pd.DataFrame(p_X_training[:,10:12]))
     
-    p_X_training = np.array(pd.concat([pd.DataFrame(normalizado1),
-                             pd.DataFrame(p_X_training[:,8:10]),
-                             pd.DataFrame(normalizado2),
-                             pd.DataFrame(p_X_training[:,12])],axis=1, ignore_index=True).iloc[:,:])
-    
-    
-    print(p_X_training)
+    np_dataframe_test = np.array(pd.concat([pd.DataFrame(df1_test),
+                             pd.DataFrame(np.array(df_original.iloc[:, 8:10])),
+                             pd.DataFrame(df2_test),
+                             pd.DataFrame(np.array(df_original.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
 
-    p_X_validation = norm_dataframe(pd.DataFrame(p_X_validation))
-    p_X_test = norm_dataframe(pd.DataFrame(p_X_test))
-    p_X_crash_test = np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,:-1])
-    p_Y_crash_test = np.zeros((len(p_X_crash_test), 1))
+
+    p_X_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,:-1] 
+    p_Y_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,-1]
+    p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
+
+    # p_Y_crash_test = np.zeros((len(p_X_crash_test), 1))
     
     #Printeos para ver los valores que hay despues de la normalizacion en las columnas con valores categoricos (creo)
     print("La columna 8 = Tipo_Precipitacion")
@@ -111,8 +124,8 @@ if __name__ == "__main__":
     print("La columna 12 = Estado_Carretera")
     print(np.unique(np.array(p_X_training[:,12])))
     
-    for index, val in enumerate(np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,-1])):
-        p_Y_crash_test[index] = val
+    # for index, val in enumerate(np_dataframe[:,-1]):
+    #     p_Y_crash_test[index] = val
 
     # iris_dataset = pd.read_csv("dataset/iris.csv")
     # x_pre = list()
@@ -138,7 +151,7 @@ if __name__ == "__main__":
     # print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=200, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=100, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
@@ -146,8 +159,8 @@ if __name__ == "__main__":
                         p_Y_validation=p_Y_validation,
                         batch_size=1,
                         p_batchs_per_epoch=100,
-                        p_number_hidden_layers=1,
-                        p_number_neurons_hidden_layers=np.array([16]))
+                        p_number_hidden_layers=3,
+                        p_number_neurons_hidden_layers=np.array([128,256,128]))
 
     # print((BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
 
