@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 
-TIPO_PRECIPITACION = {'TIPO_PRECIPITACION': {'clear': 0, 'rain': 1, 'snow': 3}}
+TIPO_PRECIPITACION = {'TIPO_PRECIPITACION': {'clear': 0, 'rain': 1, 'snow': 2}}
 
 INTENSIDAD_PRECIPITACION = {'INTENSIDAD_PRECIPITACION': {'High': 0, 'Low': 1, 'Moderate': 2, 'None': 3}}
 
@@ -87,19 +87,29 @@ if __name__ == "__main__":
     p_X_training, p_X_validation, p_Y_training, p_Y_validation = df_split(
         pd.DataFrame(np.concatenate((p_X_training, p_Y_training), axis=1)), 0.15)
 
-    p_X_training = norm_dataframe(pd.DataFrame(p_X_training))
+    normalizado1 = norm_dataframe(pd.DataFrame(p_X_training[:,0:8]))
+    normalizado2 = norm_dataframe(pd.DataFrame(p_X_training[:,10:12]))
+    
+    p_X_training = np.array(pd.concat([pd.DataFrame(normalizado1),
+                             pd.DataFrame(p_X_training[:,8:10]),
+                             pd.DataFrame(normalizado2),
+                             pd.DataFrame(p_X_training[:,12])],axis=1, ignore_index=True).iloc[:,:])
+    
+    
+    print(p_X_training)
+
     p_X_validation = norm_dataframe(pd.DataFrame(p_X_validation))
     p_X_test = norm_dataframe(pd.DataFrame(p_X_test))
     p_X_crash_test = np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,:-1])
     p_Y_crash_test = np.zeros((len(p_X_crash_test), 1))
-
-    # Printeos para ver los valores que hay despues de la normalizacion en las columnas con valores categoricos (creo)
-    # print("La columna 8 = Tipo_Precipitacion")
-    # print(np.unique(p_X_training[:,8]))
-    # print("La columna 9 = Intensidad_Precipitacion")
-    # print(np.unique(p_X_training[:,9]))
-    # print("La columna 12 = Estado_Carretera")
-    # print(np.unique(p_X_training[:,12]))
+    
+    #Printeos para ver los valores que hay despues de la normalizacion en las columnas con valores categoricos (creo)
+    print("La columna 8 = Tipo_Precipitacion")
+    print(np.unique(np.array(p_X_training[:,8])))
+    print("La columna 9 = Intensidad_Precipitacion")
+    print(np.unique(np.array(p_X_training[:,9])))
+    print("La columna 12 = Estado_Carretera")
+    print(np.unique(np.array(p_X_training[:,12])))
     
     for index, val in enumerate(np.array(df.loc[df['ACCIDENTE'] == 1].iloc[:,-1])):
         p_Y_crash_test[index] = val
@@ -128,7 +138,7 @@ if __name__ == "__main__":
     # print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.01, p_number_iterations=200, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=200, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
@@ -137,7 +147,7 @@ if __name__ == "__main__":
                         batch_size=1,
                         p_batchs_per_epoch=100,
                         p_number_hidden_layers=1,
-                        p_number_neurons_hidden_layers=np.array([3]))
+                        p_number_neurons_hidden_layers=np.array([16]))
 
     # print((BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
 

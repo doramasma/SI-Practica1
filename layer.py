@@ -52,5 +52,6 @@ class Layer(object):
     @staticmethod
     def _quantization(p_activation):
         # TODO: Mayor que cero 1 <=> Menor que cero -1
+        print(p_activation)
         return numpy.where(p_activation >= 0.6, 1, 0)
 

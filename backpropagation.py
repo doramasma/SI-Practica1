@@ -3,12 +3,24 @@ import inputlayer
 import hiddenlayer
 import outputlayer
 
+def _ReLU(X):
+    def int_ReLU(x):
+        return x * (x > 0)
+    vec = np.vectorize(int_ReLU)
+    return vec(X)
+
+def _dReLU(X):
+    def int_dReLU(x):
+        return 1. * (x > 0)
+    vec = np.vectorize(int_dReLU)
+    return vec(X)
+
 
 def _derivative_sigmoid(p_X):
     def int_derivative_sigmoid(x):
-        if x < -1000:
+        if x < -100:
             return 0
-        elif x > 1000:
+        elif x > 100:
             return 1
         else:
             return np.exp(-x) / ((1 + np.exp(-x)) ** 2)
@@ -19,9 +31,9 @@ def _derivative_sigmoid(p_X):
 
 def _sigmoid(X):
     def int_sigmoid(x):
-        if x < -1000:
+        if x < -100:
             return 0
-        elif x > 1000:
+        elif x > 100:
             return 1
         else:
             return 1 / (1 + np.exp(-x))
@@ -35,11 +47,11 @@ def _calculate_sigma_output(p_Y_training, v_Y_layer_):
         if x == 0:
             return 1
         elif x == 1:
-            return 20
+            return 15
 
     vect = np.vectorize(convert)
     weights = vect(p_Y_training)
-    return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * weights * _derivative_sigmoid(v_Y_layer_)
+    return np.subtract(_derivative_sigmoid(v_Y_layer_), p_Y_training) * weights * _sigmoid(v_Y_layer_)
 
 
 def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
