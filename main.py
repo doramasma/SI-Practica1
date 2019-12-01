@@ -29,7 +29,7 @@ class BColors:
     LOADING2 = '\x1b[6;30;42m'
 
 
-def process_input():
+def process_default_input():
     dataset = pd.read_excel('./dataset/dataset_assignment_1.xls', na_values=[' '])
     dataset = dataset.dropna()
 
@@ -39,7 +39,58 @@ def process_input():
     for _dict in listDict:
         dataset = dataset.replace(_dict)
 
-    return dataset
+    df = undersample(dataset)
+    
+    df1 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 0:8])))
+    df2 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 10:12])))
+    df1_test = norm_dataframe(pd.DataFrame(np.array(dataset.iloc[:, 0:8])))
+    df2_test = norm_dataframe(pd.DataFrame(np.array(dataset.iloc[:, 10:12])))
+
+    
+    np_dataframe = np.array(pd.concat([pd.DataFrame(df1),
+                             pd.DataFrame(np.array(df.iloc[:, 8:10])),
+                             pd.DataFrame(df2),
+                             pd.DataFrame(np.array(df.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
+
+    p_X_training, p_X_validation, p_Y_training, p_Y_validation = df_split(pd.DataFrame(np_dataframe), 0.15)
+    
+    np_dataframe_test = np.array(pd.concat([pd.DataFrame(df1_test),
+                             pd.DataFrame(np.array(dataset.iloc[:, 8:10])),
+                             pd.DataFrame(df2_test),
+                             pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
+
+    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.10)
+
+
+    p_X_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,:-1] 
+    p_Y_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,-1]
+    p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
+
+    return p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test
+
+def process_iris_input():
+    iris_dataset = pd.read_csv("dataset/iris.csv")
+    x_pre = list()
+    for i in range(0, 100):
+        x_pre.append([iris_dataset['petal.length'][i], iris_dataset['petal.width'][i]])
+    p_X = np.array(x_pre)
+    p_Y = np.zeros((len(p_X), 1))
+
+    for i in range(0, 100):
+        if i < 50:
+            p_Y[i] = np.zeros(1)
+        else:
+            p_Y[i] = np.ones(1)
+
+    randomize = np.arange(len(p_X))
+    np.random.shuffle(randomize)
+    p_X = p_X[randomize]
+    p_Y = p_Y[randomize]
+
+    p_X_training, p_X_validation, p_X_test = p_X[0:70], p_X[71:90], p_X[91:100]
+    p_Y_training, p_Y_validation, p_Y_test = p_Y[0:70], p_Y[71:90], p_Y[91:100]
+
+    return p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test 
 
 def undersample(df):
     accidents_df = df.loc[df['ACCIDENTE'] == 1].iloc[:,:]
@@ -83,75 +134,16 @@ def get_accuracy(predicted, test):
 
 if __name__ == "__main__":
     print((BColors.LOADING + BColors.BOLD) + "|============[Getting info from dataset...]============|" + BColors.ENDC)
-    df_original = process_input()
 
-    df = undersample(df_original)
-    
-    df1 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 0:8])))
-    df2 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 10:12])))
+    # Default (Accident) input...
+    # p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test = process_default_input()
+    # Iris input...
+    p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test = process_iris_input()
 
-    
-    np_dataframe = np.array(pd.concat([pd.DataFrame(df1),
-                             pd.DataFrame(np.array(df.iloc[:, 8:10])),
-                             pd.DataFrame(df2),
-                             pd.DataFrame(np.array(df.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
-
-    p_X_training, p_X_test, p_Y_training, p_Y_test = df_split(pd.DataFrame(np_dataframe), 0.10)
-    p_X_test, p_X_validation, p_Y_test, p_Y_validation = df_split(
-        pd.DataFrame(np.concatenate((p_X_training, p_Y_training), axis=1)), 0.15)
-    #############################################################################
-    df1_test = norm_dataframe(pd.DataFrame(np.array(df_original.iloc[:, 0:8])))
-    df2_test = norm_dataframe(pd.DataFrame(np.array(df_original.iloc[:, 10:12])))
-
-    
-    np_dataframe_test = np.array(pd.concat([pd.DataFrame(df1_test),
-                             pd.DataFrame(np.array(df_original.iloc[:, 8:10])),
-                             pd.DataFrame(df2_test),
-                             pd.DataFrame(np.array(df_original.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
-
-
-    p_X_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,:-1] 
-    p_Y_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,-1]
-    p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
-
-    # p_Y_crash_test = np.zeros((len(p_X_crash_test), 1))
-    
-    #Printeos para ver los valores que hay despues de la normalizacion en las columnas con valores categoricos (creo)
-    print("La columna 8 = Tipo_Precipitacion")
-    print(np.unique(np.array(p_X_training[:,8])))
-    print("La columna 9 = Intensidad_Precipitacion")
-    print(np.unique(np.array(p_X_training[:,9])))
-    print("La columna 12 = Estado_Carretera")
-    print(np.unique(np.array(p_X_training[:,12])))
-    
-    # for index, val in enumerate(np_dataframe[:,-1]):
-    #     p_Y_crash_test[index] = val
-
-    # iris_dataset = pd.read_csv("dataset/iris.csv")
-    # x_pre = list()
-    # for i in range(0, 100):
-    #     x_pre.append([iris_dataset['petal.length'][i], iris_dataset['petal.width'][i]])
-    # p_X = np.array(x_pre)
-    # p_Y = np.zeros((len(p_X), 1))
-
-    # for i in range(0, 100):
-    #     if i < 50:
-    #         p_Y[i] = np.zeros(1)
-    #     else:
-    #         p_Y[i] = np.ones(1)
-
-    # randomize = np.arange(len(p_X))
-    # np.random.shuffle(randomize)
-    # p_X = p_X[randomize]
-    # p_Y = p_Y[randomize]
-
-    # p_X_training, p_X_validation, p_X_test = p_X[0:70], p_X[71:90], p_X[91:100]
-    # p_Y_training, p_Y_validation, p_Y_test = p_Y[0:70], p_Y[71:90], p_Y[91:100]
-
-    # print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
+    print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=100, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.0001, p_number_iterations=50, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
@@ -160,23 +152,26 @@ if __name__ == "__main__":
                         batch_size=1,
                         p_batchs_per_epoch=100,
                         p_number_hidden_layers=3,
-                        p_number_neurons_hidden_layers=np.array([128,256,128]))
+                        p_number_neurons_hidden_layers=np.array([64,128,32]))
 
-    # print((BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
+    print("\n" + (BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=======[Predicting new values (Random Test)...]=======|" + BColors.ENDC)
-    # predict = backpropagation.predict(p_X_test)
-    # accuracy = get_accuracy(predict, p_Y_test)
-    # print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 
-    # print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
-    # print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+    predict = backpropagation.predict(p_X_test)
+    accuracy = get_accuracy(predict, p_Y_test)
+
+    print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
+
+    print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
+    print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (Crash Test)...]=======|" + BColors.ENDC)
-    predict = backpropagation.predict(p_X_crash_test)
-    accuracy = get_accuracy(predict, p_Y_crash_test)
 
-    # print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
+    #predict = backpropagation.predict(p_X_crash_test)
+    #accuracy = get_accuracy(predict, p_Y_crash_test)
+
+    print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 
     print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
     print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)

@@ -52,10 +52,7 @@ def _calculate_sigma_output(p_Y_training, v_Y_layer_):
     return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
 
 def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
-    print(sigma_U.shape)
-    print(_dReLU(v_Y_layer_).shape)
-    print(w_U.T[1:,1:].shape)
-    return np.dot(sigma_U, w_U.T[1:,:]) * _dReLU(v_Y_layer_)
+    return np.dot(sigma_U, w_U.T[:,1:]) * _derivative_sigmoid(v_Y_layer_)
 
 
 def get_accuracy(predicted, test):
@@ -164,19 +161,15 @@ class BackPropagation(object):
 
                 # BACKWARD
                 sigma = _calculate_sigma_output(current_batch_Y, v_Y.pop())
-                # print(sigma.shape)
                 delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
                 self.output_layer_.w = self.output_layer_.w + delta_w.T
                 sigma_U = sigma
-
                 for _ in reversed(range(len(v_Y))):
                     current_layer = layers.pop()
                     sigma = _calculate_sigma(sigma_U, w.pop(), v_Y.pop())
                     delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
                     current_layer.w = current_layer.w + delta_w.T
                     sigma_U = sigma
-                    
-
             # TODO: Validation
             sge = np.mean(np.square(np.subtract(p_Y_validation, self.get_act_value(p_X_validation))))
             accuracy = get_accuracy(self.predict(p_X_validation), p_Y_validation)
