@@ -40,7 +40,7 @@ def process_default_input():
         dataset = dataset.replace(_dict)
 
     df = undersample(dataset)
-    
+    #df = dataset
     df1 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 0:8])))
     df2 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 10:12])))
     df1_test = norm_dataframe(pd.DataFrame(np.array(dataset.iloc[:, 0:8])))
@@ -97,7 +97,7 @@ def undersample(df):
     non_accidents_df = df.loc[df['ACCIDENTE'] == 0].iloc[:,:]
     randomize = np.arange(df.shape[0])
     np.random.shuffle(randomize)
-    randomize = randomize[0:10000]
+    randomize = randomize[0:8000]
     non_accidents_df = df.iloc[randomize,:]
 
     return pd.concat([accidents_df, non_accidents_df])
@@ -136,14 +136,14 @@ if __name__ == "__main__":
     print((BColors.LOADING + BColors.BOLD) + "|============[Getting info from dataset...]============|" + BColors.ENDC)
 
     # Default (Accident) input...
-    # p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test = process_default_input()
+    p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test = process_default_input()
     # Iris input...
-    p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test = process_iris_input()
+    # p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test = process_iris_input()
 
     print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.0001, p_number_iterations=50, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=50 ,p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
@@ -168,8 +168,8 @@ if __name__ == "__main__":
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (Crash Test)...]=======|" + BColors.ENDC)
 
-    #predict = backpropagation.predict(p_X_crash_test)
-    #accuracy = get_accuracy(predict, p_Y_crash_test)
+    predict = backpropagation.predict(p_X_crash_test)
+    accuracy = get_accuracy(predict, p_Y_crash_test)
 
     print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 

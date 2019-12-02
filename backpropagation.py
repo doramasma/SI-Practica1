@@ -3,6 +3,8 @@ import inputlayer
 import hiddenlayer
 import outputlayer
 
+tol = 0.000000000001
+
 def _ReLU(X):
     def int_ReLU(x):
         if x > 100:
@@ -23,24 +25,14 @@ def _dReLU(X):
 
 
 def _derivative_sigmoid(p_X):
-    def int_derivative_sigmoid(x):
-        if x < -100:
-            return 0
-        elif x > 100:
-            return 1
-        else:
-            return np.exp(-x) / ((1 + np.exp(-x)) ** 2)
-
-    vec = np.vectorize(int_derivative_sigmoid)
-    return vec(p_X)
-
+    return _sigmoid(p_X) * (1 - _sigmoid(p_X))
 
 def _sigmoid(X):
     def int_sigmoid(x):
         if x < -100:
-            return 0
+            return tol
         elif x > 100:
-            return 1
+            return 100 - tol
         else:
             return 1 / (1 + np.exp(-x))
 
@@ -49,10 +41,25 @@ def _sigmoid(X):
 
 
 def _calculate_sigma_output(p_Y_training, v_Y_layer_):
+    # def convert(x):
+    #     if x == 0:
+    #         return 1
+    #     if x == 1:
+    #         return 16
+    # vect = np.vectorize(convert)
+    # weights = vect(p_Y_training)
+    # print("Esto es sigma output ->>", np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_))
     return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
 
 def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
-    return np.dot(sigma_U, w_U.T[:,1:]) * _derivative_sigmoid(v_Y_layer_)
+    # print("sigma_U => ", sigma_U)
+    # print("w_U => ", w_U)
+    # print("El dot ->",np.dot(sigma_U, w_U.T[:,1:]))
+    # print("La derivada de sigmoid --->", _derivative_sigmoid(v_Y_layer_))
+    # print("Resultado de sigma =>", (np.dot(sigma_U, w_U.T[:,1:])) * _derivative_sigmoid(v_Y_layer_))
+    # print("============================================================")
+
+    return (np.dot(sigma_U, w_U.T[:,1:])) * _dReLU(v_Y_layer_)
 
 
 def get_accuracy(predicted, test):
@@ -61,7 +68,9 @@ def get_accuracy(predicted, test):
     return round(n_hits * 100 / len(test), 2)
 
 def _calculate_delta(eta, sigma, v_Y_previous_layer_):
+    
     delta_w = eta * np.dot(sigma.T, v_Y_previous_layer_)
+  
     delta_w0 = eta * sigma.T
     return np.hstack([delta_w0, delta_w])
 
@@ -145,14 +154,11 @@ class BackPropagation(object):
                 w = []      # vector of weights of each layer
                 layers = []
 
-                z_Y.append(current_batch_X)
                 
-                layers.append(self.input_layer_)
                 v_Y.append(self.input_layer_._net_input(current_batch_X))
                 z_Y.append(self.input_layer_._activation(v_Y[-1]))
                 w.append(self.input_layer_.w)
                 for v_hiddenlayer in self.hidden_layers_:
-                    layers.append(v_hiddenlayer)
                     v_Y.append(v_hiddenlayer._net_input(z_Y[-1]))
                     z_Y.append(v_hiddenlayer._activation(v_Y[-1]))
                     w.append(v_hiddenlayer.w)
@@ -160,16 +166,18 @@ class BackPropagation(object):
                 w.append(self.output_layer_.w)
 
                 # BACKWARD
+                # print("Z_Y del output", len(z_Y) - 1 )
                 sigma = _calculate_sigma_output(current_batch_Y, v_Y.pop())
                 delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
                 self.output_layer_.w = self.output_layer_.w + delta_w.T
                 sigma_U = sigma
-                for _ in reversed(range(len(v_Y))):
-                    current_layer = layers.pop()
+                for i in reversed(range(0, len(self.hidden_layers_))):
                     sigma = _calculate_sigma(sigma_U, w.pop(), v_Y.pop())
                     delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
-                    current_layer.w = current_layer.w + delta_w.T
+                    self.hidden_layers_[i].w += delta_w.T
                     sigma_U = sigma
+                    
+
             # TODO: Validation
             sge = np.mean(np.square(np.subtract(p_Y_validation, self.get_act_value(p_X_validation))))
             accuracy = get_accuracy(self.predict(p_X_validation), p_Y_validation)
