@@ -1,6 +1,7 @@
 import backpropagation
 import numpy as np
 import pandas as pd
+from utils import display_error, display_accuracy
 from datetime import datetime as dt
 
 TIPO_PRECIPITACION = {'TIPO_PRECIPITACION': {'clear': 0, 'rain': 1, 'snow': 2}}
@@ -40,33 +41,31 @@ def process_default_input():
         dataset = dataset.replace(_dict)
 
     df = undersample(dataset)
-    #df = dataset
     df1 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 0:8])))
     df2 = norm_dataframe(pd.DataFrame(np.array(df.iloc[:, 10:12])))
     df1_test = norm_dataframe(pd.DataFrame(np.array(dataset.iloc[:, 0:8])))
     df2_test = norm_dataframe(pd.DataFrame(np.array(dataset.iloc[:, 10:12])))
 
-    
     np_dataframe = np.array(pd.concat([pd.DataFrame(df1),
-                             pd.DataFrame(np.array(df.iloc[:, 8:10])),
-                             pd.DataFrame(df2),
-                             pd.DataFrame(np.array(df.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
+                                       pd.DataFrame(np.array(df.iloc[:, 8:10])),
+                                       pd.DataFrame(df2),
+                                       pd.DataFrame(np.array(df.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:, :])
 
     p_X_training, p_X_validation, p_Y_training, p_Y_validation = df_split(pd.DataFrame(np_dataframe), 0.15)
-    
+
     np_dataframe_test = np.array(pd.concat([pd.DataFrame(df1_test),
-                             pd.DataFrame(np.array(dataset.iloc[:, 8:10])),
-                             pd.DataFrame(df2_test),
-                             pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:,:])
+                                            pd.DataFrame(np.array(dataset.iloc[:, 8:10])),
+                                            pd.DataFrame(df2_test),
+                                            pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:, :])
 
     _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.10)
 
-
-    p_X_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,:-1] 
-    p_Y_crash_test = np_dataframe_test[np_dataframe_test[:,-1] == 1][:,-1]
+    p_X_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, :-1]
+    p_Y_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, -1]
     p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
 
     return p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test
+
 
 def process_iris_input():
     iris_dataset = pd.read_csv("dataset/iris.csv")
@@ -90,15 +89,16 @@ def process_iris_input():
     p_X_training, p_X_validation, p_X_test = p_X[0:70], p_X[71:90], p_X[91:100]
     p_Y_training, p_Y_validation, p_Y_test = p_Y[0:70], p_Y[71:90], p_Y[91:100]
 
-    return p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test 
+    return p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test
+
 
 def undersample(df):
-    accidents_df = df.loc[df['ACCIDENTE'] == 1].iloc[:,:]
-    non_accidents_df = df.loc[df['ACCIDENTE'] == 0].iloc[:,:]
-    randomize = np.arange(df.shape[0])
+    accidents_df = df.loc[df['ACCIDENTE'] == 1].iloc[:, :]
+    non_accidents_df = pd.DataFrame(df.loc[df['ACCIDENTE'] == 0])
+    randomize = np.arange(non_accidents_df.shape[0])
     np.random.shuffle(randomize)
-    randomize = randomize[0:8000]
-    non_accidents_df = df.iloc[randomize,:]
+    randomize = randomize[0:6500]
+    non_accidents_df = non_accidents_df.iloc[randomize, :]
 
     return pd.concat([accidents_df, non_accidents_df])
 
@@ -143,16 +143,16 @@ if __name__ == "__main__":
     print((BColors.LOADING + BColors.BOLD) + "|===============[End of input process]=================|" + BColors.ENDC)
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
-    backpropagation = backpropagation.BackPropagation(p_eta=0.001, p_number_iterations=50 ,p_random_state=1)
+
+    backpropagation = backpropagation.BackPropagation(p_eta=0.0005, p_number_iterations=100, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
                         p_X_validation=p_X_validation,
                         p_Y_validation=p_Y_validation,
-                        batch_size=1,
                         p_batchs_per_epoch=100,
                         p_number_hidden_layers=3,
-                        p_number_neurons_hidden_layers=np.array([64,128,32]))
+                        p_number_neurons_hidden_layers=np.array([64, 128, 32]))
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|====================[BPNN trained]====================|" + BColors.ENDC)
 
@@ -175,3 +175,6 @@ if __name__ == "__main__":
 
     print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
     print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+
+    display_error(backpropagation)
+    display_accuracy(backpropagation)

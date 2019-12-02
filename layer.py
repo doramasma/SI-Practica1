@@ -3,6 +3,7 @@ import numpy
 
 tol = 0.000000000001
 
+
 def _sigmoid(X):
     def int_sigmoid(x):
         if x < -100:
@@ -11,6 +12,7 @@ def _sigmoid(X):
             return 100 - tol
         else:
             return 1 / (1 + numpy.exp(-x))
+
     vect = numpy.vectorize(int_sigmoid)
     return vect(X)
 
@@ -52,7 +54,4 @@ class Layer(object):
 
     @staticmethod
     def _quantization(p_activation):
-        # print(p_activation[p_activation >= 0.5])
-        # TODO: Mayor que cero 1 <=> Menor que cero -1
-        return numpy.where(p_activation >= 0.45, 1, 0)
-
+        return numpy.where(p_activation >= 0.5, 1, 0)
