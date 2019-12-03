@@ -58,11 +58,21 @@ def process_default_input():
                                             pd.DataFrame(df2_test),
                                             pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:, :])
 
-    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.10)
+    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.1)
 
     p_X_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, :-1]
     p_Y_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, -1]
     p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
+
+    # print("TRAINING [No accidente] => ", p_Y_training[p_Y_training == 0].shape)
+    # print("VALIDATION [No accidente] => ", p_Y_validation[p_Y_validation == 0].shape)
+    # print("TEST [No accidente] => ", p_Y_test[p_Y_test == 0].shape)
+    # print("CRASH [No accidente] => ", p_Y_crash_test[p_Y_crash_test == 0].shape)
+
+    # print("TRAINING [Accidente] => ", p_Y_training[p_Y_training == 1].shape)
+    # print("VALIDATION [Accidente] => ", p_Y_validation[p_Y_validation == 1].shape)
+    # print("TEST [Accidente] => ", p_Y_test[p_Y_test == 1].shape)
+    # print("CRASH [Accidente] => ", p_Y_crash_test[p_Y_crash_test == 1].shape)
 
     return p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test
 
@@ -97,10 +107,11 @@ def undersample(df):
     non_accidents_df = pd.DataFrame(df.loc[df['ACCIDENTE'] == 0])
     randomize = np.arange(non_accidents_df.shape[0])
     np.random.shuffle(randomize)
-    randomize = randomize[0:6500]
+    randomize = randomize[0:3500]
     non_accidents_df = non_accidents_df.iloc[randomize, :]
 
-    return pd.concat([accidents_df, non_accidents_df])
+    
+    return pd.concat([accidents_df, non_accidents_df]).sample(frac=1)
 
 
 def df_split(dataset, test_range=.10):
@@ -144,7 +155,7 @@ if __name__ == "__main__":
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
 
-    backpropagation = backpropagation.BackPropagation(p_eta=0.0005, p_number_iterations=100, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.0005, p_number_iterations=85, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,
