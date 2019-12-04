@@ -58,7 +58,7 @@ def process_default_input():
                                             pd.DataFrame(df2_test),
                                             pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:, :])
 
-    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.1)
+    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 1)
 
     p_X_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, :-1]
     p_Y_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, -1]
@@ -107,7 +107,7 @@ def undersample(df):
     non_accidents_df = pd.DataFrame(df.loc[df['ACCIDENTE'] == 0])
     randomize = np.arange(non_accidents_df.shape[0])
     np.random.shuffle(randomize)
-    randomize = randomize[0:3500]
+    randomize = randomize[0:8000]
     non_accidents_df = non_accidents_df.iloc[randomize, :]
 
     
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|=================[Training BPNN...]===================|" + BColors.ENDC)
 
-    backpropagation = backpropagation.BackPropagation(p_eta=0.0005, p_number_iterations=85, p_random_state=1)
+    backpropagation = backpropagation.BackPropagation(p_eta=0.0005, p_number_iterations=100, p_random_state=1)
 
     backpropagation.fit(p_X_training=p_X_training,
                         p_Y_training=p_Y_training,

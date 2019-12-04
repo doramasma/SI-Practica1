@@ -3,60 +3,21 @@ import inputlayer
 import hiddenlayer
 import outputlayer
 
-tol = 0.000000000001
+def calculate_output_δ(output_layer, p_Y):
+    return np.subtract(p_Y, output_layer.last_output) * output_layer._derivative_activation()
 
+def calculate_δ(current_layer, last_δ, last_W):
+    return np.dot(last_δ, last_W.T[:,1:]) * current_layer._derivative_activation()
 
-def _ReLU(X):
-    def int_ReLU(x):
-        return x * (x > 0)
-
-    vec = np.vectorize(int_ReLU)
-    return vec(X)
-
-
-def _dReLU(X):
-    def int_dReLU(x):
-        return 1. * (x > 0)
-
-    vec = np.vectorize(int_dReLU)
-    return vec(X)
-
-
-def _derivative_sigmoid(p_X):
-    return _sigmoid(p_X) * (1 - _sigmoid(p_X))
-
-
-def _sigmoid(X):
-    def int_sigmoid(x):
-        if x < -100:
-            return tol
-        elif x > 100:
-            return 100 - tol
-        else:
-            return 1 / (1 + np.exp(-x))
-
-    vect = np.vectorize(int_sigmoid)
-    return vect(X)
-
-
-def _calculate_sigma_output(p_Y_training, v_Y_layer_):
-    return np.subtract(p_Y_training, _sigmoid(v_Y_layer_)) * _derivative_sigmoid(v_Y_layer_)
-
-
-def _calculate_sigma(sigma_U, w_U, v_Y_layer_):
-    return (np.dot(sigma_U, w_U.T[:, 1:])) * _dReLU(v_Y_layer_)
-
+def calculate_ΔW(previous_layer, eta, δ):
+    ΔW_no_w0 = eta * np.dot(δ.T, previous_layer.last_output)
+    ΔW0 = eta * δ.T
+    ΔW = np.hstack([ΔW0, ΔW_no_w0])
+    return ΔW
 
 def get_accuracy(predicted, test):
     n_hits = len([1 for predicted, expected in zip(predicted, test) if predicted == expected])
     return round(n_hits * 100 / len(test), 2)
-
-
-def _calculate_delta(eta, sigma, v_Y_previous_layer_):
-    delta_w = eta * np.dot(sigma.T, v_Y_previous_layer_)
-    delta_w0 = eta * sigma.T
-    return np.hstack([delta_w0, delta_w])
-
 
 class BackPropagation(object):
     """Class BackPropagation:
@@ -125,39 +86,44 @@ class BackPropagation(object):
                 current_batch_X = p_X_training[batch:batch + 1, :]
                 current_batch_Y = p_Y_training[batch:batch + 1, :]
 
-                # FORWARD
-                v_Y = []  # vector of net_input results of each layer
-                z_Y = []  # vector of activation results of each layer
-                w = []  # vector of weights of each layer
+                self.forward_pass(current_batch_X)
+                self.backward_pass(current_batch_Y)
+            self.show_progress(epoch, p_X_validation, p_Y_validation)
+        return
+    
+    def forward_pass(self, p_X):
+        return self.predict(p_X)
 
-                v_Y.append(self.input_layer_._net_input(current_batch_X))
-                z_Y.append(self.input_layer_._activation(v_Y[-1]))
-                w.append(self.input_layer_.w)
-                for v_hiddenlayer in self.hidden_layers_:
-                    v_Y.append(v_hiddenlayer._net_input(z_Y[-1]))
-                    z_Y.append(v_hiddenlayer._activation(v_Y[-1]))
-                    w.append(v_hiddenlayer.w)
-                v_Y.append(self.output_layer_._net_input(z_Y[-1]))
-                w.append(self.output_layer_.w)
+    def backward_pass(self, p_Y):
+        δ = calculate_output_δ(self.output_layer_, p_Y)
+        ΔW = calculate_ΔW(self.hidden_layers_[-1], self.eta, δ)
+        
 
-                # BACKWARD
-                sigma = _calculate_sigma_output(current_batch_Y, v_Y.pop())
-                delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
-                self.output_layer_.w = self.output_layer_.w + delta_w.T
-                sigma_U = sigma
-                for i in reversed(range(0, len(self.hidden_layers_))):
-                    sigma = _calculate_sigma(sigma_U, w.pop(), v_Y.pop())
-                    delta_w = _calculate_delta(self.eta, sigma, z_Y.pop())
-                    self.hidden_layers_[i].w += delta_w.T
-                    sigma_U = sigma
+        self.output_layer_.w += ΔW.T
+        last_W = self.output_layer_.w
+        last_δ = δ
+        for i in reversed(range(0, len(self.hidden_layers_))):
+            if i == 0:
+                previous_layer = self.input_layer_
+            else:
+                previous_layer = self.hidden_layers_[i-1]
 
-            sse = np.mean(np.square(np.subtract(p_Y_validation, self.get_act_value(p_X_validation))))
-            accuracy = get_accuracy(self.predict(p_X_validation), p_Y_validation)
-            self.sse_list.append(sse)
-            self.accuracy_list.append(accuracy)
-            print("\rIteracion %s: ACC: %f\tSSE: %f\t\t\t" % (epoch, accuracy, sse), end='')
+            δ = calculate_δ(self.hidden_layers_[i], last_δ, last_W)
+            ΔW = calculate_ΔW(previous_layer, self.eta, δ)
 
-        return self
+            self.hidden_layers_[i].w += ΔW.T
+            last_W = self.hidden_layers_[i].w
+            last_δ = δ
+            
+        return
+
+    def show_progress(self, epoch, p_X_validation, p_Y_validation):
+        self.predict(p_X_validation)
+        sse = np.mean(np.square(np.subtract(p_Y_validation, self.output_layer_.last_output)))
+        accuracy = get_accuracy(self.predict(p_X_validation), p_Y_validation)
+        self.sse_list.append(sse)
+        self.accuracy_list.append(accuracy)
+        print("\rIteracion %s: ACC: %f\tSSE: %f\t\t\t" % (epoch, accuracy, sse), end='')
 
     def predict(self, p_X):
         v_Y_input_layer_ = self.input_layer_.predict(p_X)
@@ -167,14 +133,4 @@ class BackPropagation(object):
             v_X_hidden_layer_ = v_Y_hidden_layer_
         v_X_output_layer_ = v_Y_hidden_layer_
         v_Y_output_layer_ = self.output_layer_.predict(v_X_output_layer_)
-        return v_Y_output_layer_
-
-    def get_act_value(self, p_X):
-        v_Y_input_layer_ = self.input_layer_.predict(p_X)
-        v_X_hidden_layer_ = v_Y_input_layer_
-        for v_hiddenlayer in self.hidden_layers_:
-            v_Y_hidden_layer_ = v_hiddenlayer.predict(v_X_hidden_layer_)
-            v_X_hidden_layer_ = v_Y_hidden_layer_
-        v_X_output_layer_ = v_Y_hidden_layer_
-        v_Y_output_layer_ = self.output_layer_.activate(v_X_output_layer_)
         return v_Y_output_layer_

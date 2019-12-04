@@ -1,5 +1,6 @@
 import numpy
 import layer
+import utils
 
 
 class OutputLayer(layer.Layer):
@@ -11,7 +12,12 @@ class OutputLayer(layer.Layer):
         return self
 
     def predict(self, p_X):
-        return self._quantization(self.activate(p_X))
+        self.last_net_input = self._net_input(p_X)
+        self.last_output = self._activation(self.last_net_input)
+        return self._quantization(self.last_output)
+    
+    def _activation(self, net_input):
+        return utils._sigmoid(net_input)
 
-    def activate(self, p_X):
-        return self._activation(self._net_input(p_X))
+    def _derivative_activation(self):
+        return utils._derivative_sigmoid(self.last_net_input)

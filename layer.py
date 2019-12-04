@@ -1,22 +1,6 @@
 import abc
 import numpy
 
-tol = 0.000000000001
-
-
-def _sigmoid(X):
-    def int_sigmoid(x):
-        if x < -100:
-            return tol
-        elif x > 100:
-            return 100 - tol
-        else:
-            return 1 / (1 + numpy.exp(-x))
-
-    vect = numpy.vectorize(int_sigmoid)
-    return vect(X)
-
-
 class Layer(object):
     """Class Layer:
     Attributes:
@@ -36,6 +20,8 @@ class Layer(object):
     def __init__(self, p_number_neurons=1, p_number_inputs_each_neuron=1):
         self.number_neurons = p_number_neurons
         self.number_inputs_each_neuron = p_number_inputs_each_neuron
+        self.last_net_input=0
+        self.last_output=0
 
     @abc.abstractmethod
     def init_w(self, p_random_seed=numpy.random.RandomState(None)):
@@ -48,9 +34,9 @@ class Layer(object):
     def predict(self, p_X):
         pass
 
-    @staticmethod
-    def _activation(p_net_input):
-        return _sigmoid(p_net_input)
+    @abc.abstractmethod
+    def _activation(self, p_net_input):
+        pass
 
     @staticmethod
     def _quantization(p_activation):
