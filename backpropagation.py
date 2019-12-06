@@ -134,3 +134,21 @@ class BackPropagation(object):
         v_X_output_layer_ = v_Y_hidden_layer_
         v_Y_output_layer_ = self.output_layer_.predict(v_X_output_layer_)
         return v_Y_output_layer_
+
+    def predict_traffic_light(self, p_X):
+
+        def traffic_light(x):
+            if x <= 0.1253:
+                return 0
+            elif 0.1253 < x <= 0.3656:
+                return 1
+            elif 0.3656 < x <= 0.5929:
+                return 2
+            elif 0.5929 < x <= 0.7553:
+                return 3
+            elif 0.7553 < x:
+                return 4
+
+        self.predict(p_X)
+        vect = np.vectorize(traffic_light)
+        return vect(self.output_layer_.last_output)

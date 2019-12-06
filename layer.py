@@ -40,6 +40,6 @@ class Layer(object):
 
     @staticmethod
     def _quantization(p_activation):
-        if p_activation.shape[0] == 32348:
-            numpy.savetxt('activation_predicted_values.csv', p_activation, newline=',')
+        # if p_activation.shape[0] == 6974:
+        #     numpy.savetxt('activation_predicted_values.csv', p_activation, newline=',')
         return numpy.where(p_activation >= 0.5, 1, 0)

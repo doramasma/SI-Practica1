@@ -28,6 +28,11 @@ class BColors:
     TRAINING = '\x1b[7;30;46m'
     RESULT = '\x1b[7;30;47m'
     LOADING2 = '\x1b[6;30;42m'
+    GREEN = '\033[32m'
+    LIGHT_GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    ORANGE = '\033[33m'
+    RED = '\033[31m'
 
 
 def process_default_input():
@@ -58,8 +63,11 @@ def process_default_input():
                                             pd.DataFrame(df2_test),
                                             pd.DataFrame(np.array(dataset.iloc[:, 12:]))], axis=1, ignore_index=True).iloc[:, :])
 
-    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 1)
+    _, p_X_test, _, p_Y_test = df_split(pd.DataFrame(np_dataframe_test), 0.25)
 
+    p_X_no_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 0][:3500, :-1]
+    p_Y_no_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 0][:3500, -1]
+    p_Y_no_crash_test = p_Y_no_crash_test[:, np.newaxis]
     p_X_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, :-1]
     p_Y_crash_test = np_dataframe_test[np_dataframe_test[:, -1] == 1][:, -1]
     p_Y_crash_test = p_Y_crash_test[:, np.newaxis]
@@ -74,7 +82,7 @@ def process_default_input():
     # print("TEST [Accidente] => ", p_Y_test[p_Y_test == 1].shape)
     # print("CRASH [Accidente] => ", p_Y_crash_test[p_Y_crash_test == 1].shape)
 
-    return p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test
+    return p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_X_no_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test, p_Y_no_crash_test
 
 
 def process_iris_input():
@@ -147,7 +155,7 @@ if __name__ == "__main__":
     print((BColors.LOADING + BColors.BOLD) + "|============[Getting info from dataset...]============|" + BColors.ENDC)
 
     # Default (Accident) input...
-    p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test = process_default_input()
+    p_X_training, p_X_validation, p_X_test, p_X_crash_test, p_X_no_crash_test, p_Y_training, p_Y_validation, p_Y_test, p_Y_crash_test, p_Y_no_crash_test = process_default_input()
     # Iris input...
     # p_X_training, p_X_validation, p_X_test, p_Y_training, p_Y_validation, p_Y_test = process_iris_input()
 
@@ -172,20 +180,62 @@ if __name__ == "__main__":
     predict = backpropagation.predict(p_X_test)
     accuracy = get_accuracy(predict, p_Y_test)
 
+    prediction_tl = backpropagation.predict_traffic_light(p_X_test)
+
     print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 
     print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
+    print("Número de No Accidentes del Dataset del Test: ", str(p_Y_test[p_Y_test == 0].shape[0]))
+    print("Número de Accidentes del Dataset del Test: ", str(p_Y_test[p_Y_test == 1].shape[0]), "\n")
     print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+
+    print("\n" + (BColors.GREEN + BColors.BOLD) + "Semáforo en Verde: " + str(prediction_tl[prediction_tl == 0].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.LIGHT_GREEN) + "Semáforo en Verde Suave: " + str(prediction_tl[prediction_tl == 1].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.YELLOW + BColors.BOLD) + "Semáforo en Amarillo: " + str(prediction_tl[prediction_tl == 2].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.ORANGE) + "Semáforo en Naranja: " + str(prediction_tl[prediction_tl == 3].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.RED + BColors.BOLD) + "Semáforo en Rojo: " + str(prediction_tl[prediction_tl == 4].shape[0]) + BColors.ENDC + '\n')
 
     print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (Crash Test)...]=======|" + BColors.ENDC)
 
     predict = backpropagation.predict(p_X_crash_test)
     accuracy = get_accuracy(predict, p_Y_crash_test)
 
+    prediction_tl_crash = backpropagation.predict_traffic_light(p_X_crash_test)
+
     print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
 
     print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
+    print("Número de No Accidentes del Dataset del Test: : ", str(p_Y_crash_test[p_Y_crash_test == 0].shape[0]))
+    print("Número de Accidentes del Dataset del Test: : ", str(p_Y_crash_test[p_Y_crash_test == 1].shape[0]), "\n")
     print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+
+    print("\n" + (BColors.GREEN + BColors.BOLD) + "Semáforo en Verde: " + str(prediction_tl_crash[prediction_tl_crash == 0].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.LIGHT_GREEN) + "Semáforo en Verde Suave: " + str(prediction_tl_crash[prediction_tl_crash == 1].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.YELLOW + BColors.BOLD) + "Semáforo en Amarillo: " + str(prediction_tl_crash[prediction_tl_crash == 2].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.ORANGE) + "Semáforo en Naranja: " + str(prediction_tl_crash[prediction_tl_crash == 3].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.RED + BColors.BOLD) + "Semáforo en Rojo: " + str(prediction_tl_crash[prediction_tl_crash == 4].shape[0]) + BColors.ENDC + '\n')
+
+    print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (No Crash Test)...]=======|" + BColors.ENDC)
+
+    predict = backpropagation.predict(p_X_no_crash_test)
+    accuracy = get_accuracy(predict, p_Y_no_crash_test)
+
+    prediction_tl_no_crash = backpropagation.predict_traffic_light(p_X_no_crash_test)
+
+    print((BColors.LOADING + BColors.BOLD) + "|==================[Values predicted]==================|" + BColors.ENDC)
+
+    print("\n" + (BColors.RESULT + BColors.BOLD) + "|================[Printing results...]=================|" + BColors.ENDC)
+    print("Número de No Accidentes del Dataset del Test: : ", str(p_Y_no_crash_test[p_Y_no_crash_test == 0].shape[0]))
+    print("Número de Accidentes del Dataset del Test: : ", str(p_Y_no_crash_test[p_Y_no_crash_test == 1].shape[0]), "\n")
+    print((BColors.LOADING + BColors.BOLD) + "Accuracy: " + BColors.ENDC + BColors.ACCURACY + str(accuracy) + " %" + BColors.ENDC)
+
+    print("\n" + (BColors.GREEN + BColors.BOLD) + "Semáforo en Verde: " + str(prediction_tl_no_crash[prediction_tl_no_crash == 0].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.LIGHT_GREEN) + "Semáforo en Verde Suave: " + str(prediction_tl_no_crash[prediction_tl_no_crash == 1].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.YELLOW + BColors.BOLD) + "Semáforo en Amarillo: " + str(prediction_tl_no_crash[prediction_tl_no_crash == 2].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.ORANGE) + "Semáforo en Naranja: " + str(prediction_tl_no_crash[prediction_tl_no_crash == 3].shape[0]) + BColors.ENDC)
+    print("\n" + (BColors.RED + BColors.BOLD) + "Semáforo en Rojo: " + str(prediction_tl_no_crash[prediction_tl_no_crash == 4].shape[0]) + BColors.ENDC + '\n')
 
     display_error(backpropagation)
     display_accuracy(backpropagation)
+
+
