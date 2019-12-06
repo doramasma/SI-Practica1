@@ -215,7 +215,7 @@ if __name__ == "__main__":
     print("\n" + (BColors.ORANGE) + "Semáforo en Naranja: " + str(prediction_tl_crash[prediction_tl_crash == 3].shape[0]) + BColors.ENDC)
     print("\n" + (BColors.RED + BColors.BOLD) + "Semáforo en Rojo: " + str(prediction_tl_crash[prediction_tl_crash == 4].shape[0]) + BColors.ENDC + '\n')
 
-    print("\n" + (BColors.LOADING + BColors.BOLD) + "|========[Predicting new values (No Crash Test)...]=======|" + BColors.ENDC)
+    print("\n" + (BColors.LOADING + BColors.BOLD) + "|======[Predicting new values (No Crash Test)...]======|" + BColors.ENDC)
 
     predict = backpropagation.predict(p_X_no_crash_test)
     accuracy = get_accuracy(predict, p_Y_no_crash_test)
